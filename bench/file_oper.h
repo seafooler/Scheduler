@@ -12,5 +12,6 @@
 #include <fcntl.h>
 
 #define FILE_MODE (S_IRUSR | S_IWUSR | S_IRGRP | S_IWGRP)
+#define SH_PATH "./tasks/start.sh"
 
 #endif //SCHED_BENCH_FILE_OPER_H_

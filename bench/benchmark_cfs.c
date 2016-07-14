@@ -5,9 +5,7 @@
  */
 #include <stdio.h>
 #include <string.h>
-#include "benchmark_cfs_uniform.h"
-#include "benchmark_cfs_normal.h"
-#include "file_oper.h"
+#include "benchmark_cfs.h"
 
 /*
  * Test the cfs scheduler
@@ -27,20 +25,24 @@ int main(int argc, char const *argv[])
 	int time;
 	char task_time[4];
 
+/*
 	if(argc != 5)
 	{
 		printf("Usage: ./benchmark_cfs count low high type\n");
 		return 0;
 	}
-	
+*/	
 	/*
 	 *read the arguments
 	 */
-	sscanf(argv[1], "%d", &count);
-	sscanf(argv[2], "%d", &low);
-	sscanf(argv[3], "%d", &high);
-	sscanf(argv[4], "%d", &type);
-
+//	sscanf(argv[1], "%d", &count);
+//	sscanf(argv[2], "%d", &low);
+//	sscanf(argv[3], "%d", &high);
+//	sscanf(argv[4], "%d", &type);
+	count = 20;
+	low = 5;
+	high = 50;
+	type = 0;
 	/*
 	 *check the arguments
 	 */
@@ -81,23 +83,67 @@ int main(int argc, char const *argv[])
 		strcpy(file_path, "../expefile/file");
 		sprintf(ordinal, "%d", i);
 		strcat(file_path, ordinal);
-		fd = open(file_path, O_RDWR|O_CREAT|O_TRUNC, FILE_MODE);
-	
+		if((fd = open(file_path, O_RDWR|O_CREAT|O_TRUNC, FILE_MODE)) < 0)
+		{
+			printf("Create file%d failed!", i);
+			return -1;
+		}
 	
 		//extract the substring from array_task[i], such as: extract "10" from "10stask"
 		sscanf(array_task[i], "%d", &time);	
 		sprintf(task_time, "%d", time);
-		
+			
 		//write task run_time to the file
 		len = strlen(task_time);
+
 		if(write(fd, task_time, len) != len)
 		{
 			printf("write error");
 			return 0;
 		}
-	
+
 		close(fd);
+	}
+
+	if(generate_sh(array_task, count) < 0)
+	{
+		printf("Generate shell script failed!");
+		return -1;
 	}
 	return 0;	
 	
-}	
+}
+
+
+/*
+ * generate the shell script
+ */
+int generate_sh(char **array_task, int count)
+{
+	int fd, i;
+	char *strtemp;
+	int len;
+
+	printf("SH_PATH:%s", SH_PATH);
+	
+	if((fd = open(SH_PATH, O_RDWR|O_CREAT|O_TRUNC|O_APPEND, FILE_MODE|S_IXUSR|S_IXGRP)) < 0)
+	{
+		printf("Open tasks/start.sh failed");
+		return -1;
+	}
+	
+	for(i=0; i< count; i++)
+	{
+		strcpy(strtemp, "./");
+		strcat(strtemp, array_task[i]);
+		strcat(strtemp, " &");
+		strcat(strtemp, "\n");
+		len = strlen(strtemp);		
+		if(write(fd, strtemp, len) != len)
+		{
+			printf("Write tasks/start.sh failed");
+			return -1;
+		}
+	}
+	return 0;
+}
